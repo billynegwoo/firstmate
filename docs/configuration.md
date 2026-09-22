@@ -451,7 +451,7 @@ Every claude launch's inline `--settings` JSON also carries `"attribution":{"com
 ## Crew dispatch profiles (config/crew-dispatch.json)
 
 `config/crew-dispatch.json` is an optional local, gitignored file containing natural-language rules that firstmate reads before dispatching a crewmate or scout.
-The shell scripts do not match those rules; firstmate chooses the best matching rule with judgment, resolves its profile object or array under the operating contract in `AGENTS.md` section 4 and `quota-array-dispatch`, and passes only concrete `--harness`, `--model`, and `--effort` flags to `fm-spawn.sh`.
+The [typed dispatch resolver](#typed-dispatch-resolution-env-typesafe_api_key) can supply the profile; `fm-spawn.sh` receives only concrete `--harness`, `--model`, and `--effort` flags after firstmate's intake.
 When the file exists, `fm-spawn.sh` enforces that contract by refusing crewmate and scout spawns that lack an explicit harness (`--harness`, a positional adapter, or a raw launch command).
 Batch spawns satisfy the same requirement with a shared `--harness`.
 Secondmate spawns are exempt and still resolve through `config/secondmate-harness` and its optional model and effort tokens.
@@ -498,13 +498,13 @@ A profile `floor` contains only `scope` and `min_percent`, always uses that prof
 An absent or unknown named row also makes the candidate unrankable and is reported as an unverifiable floor, not as a known shortfall.
 `ultra` is native-only: the model-aware validation contract and launch mapping are owned by `bin/fm-harness.sh validate-native-effort` and `bin/fm-spawn.sh` respectively.
 Codex `max` is valid when the profile selects `gpt-5.6-luna`, whose installed catalog entry supports that reasoning level.
-An omitted model or effort means the selected harness uses its own default for that axis.
+When model or effort remains omitted from the resolved launch profile, the selected harness uses its own default for that axis.
 `effort: "auto"` is accepted only on harnesses with a supported launch effort flag and defers the level to [typed dispatch resolution](#typed-dispatch-resolution-env-typesafe_api_key), which classifies the reasoning the task needs and emits a concrete supported level, so the literal `auto` never reaches `fm-spawn.sh`.
 `auto` is rejected on `gemini`, `opencode`, `kimi`, and `cursor`; leave effort omitted on those harnesses.
 Without the key, or on any non-clear result, firstmate reads an `auto` profile as one that specifies no effort and resolves a concrete level through the [harness-adapters effort precedence and fallback](../.agents/skills/harness-adapters/references/common/model-and-effort.md#axes-and-precedence) before spawning.
 Every profile array is an implicit quota-aware choice resolved through `quota-array-dispatch`.
 If no dispatch rule fits, firstmate resolves `default` through the same object-or-array path before falling back to `config/crew-harness`.
-Except for `ultra`, which refuses unsupported profiles under the native-effort contract above, an effort value the chosen harness does not accept is recorded as `effort=` in task meta for traceability but omitted from the launch flags.
+The [harness-adapters effort contract](../.agents/skills/harness-adapters/references/common/model-and-effort.md#axes-and-precedence) owns launch effort precedence and unsupported-value handling.
 Bootstrap reports unsupported harness/model/effort combinations as a `CREW_DISPATCH` diagnostic when they are visible in the file.
 See [`docs/examples/crew-dispatch.json`](examples/crew-dispatch.json) for a starting point to copy into local `config/crew-dispatch.json`; its Pi default declares the `claude` provider required for typed resolution of that Anthropic model.
 When the file exists, bootstrap validates it with `jq`.
