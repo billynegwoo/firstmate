@@ -1,0 +1,209 @@
+Firstmate real CLI manual validation
+{
+  "head": "f6a336d79cb960c2cadc897c9b2e314bd9538605",
+  "typesafe_key_in_process": false,
+  "worktree_dotenv_exists": false,
+  "real_tools": {
+    "bash": "/usr/bin/bash",
+    "jq": "/usr/bin/jq",
+    "curl": "/usr/bin/curl",
+    "quota-axi": "/data/codex/.local/node/bin/quota-axi"
+  },
+  "network": "No API call is required for these local CLI paths. Proxy points to closed localhost port as a guard against an unexpected request.",
+  "activation_value": "noncredential-local-validation-only is a dummy parser opt-in, never an authorized Jev key.",
+  "isolation": "FM_HOME, FM_ROOT_OVERRIDE and temporary data are inside this worktree; bootstrap uses detect-only and skips network. No Herdr session or worker is launched."
+}
+
+bootstrap-supported-auto-with-key-opt-in
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-bootstrap.sh
+config: {"rules": [{"when": "A bounded bug fix with its root cause already stated.", "use": [{"harness": "claude", "effort": "auto", "provider": "claude"}, {"harness": "codex", "effort": "auto", "provider": "codex"}, {"harness": "grok", "effort": "auto", "provider": "agy"}, {"harness": "agy", "effort": "auto", "provider": "agy"}, {"harness": "pi", "effort": "auto", "provider": "codex"}, {"harness": "pi-signed", "effort": "auto", "provider": "codex"}, {"harness": "omp", "effort": "auto", "provider": "codex"}, {"harness": "muse", "effort": "auto", "provider": "claude"}, {"harness": "rovo", "effort": "auto", "provider": "google"}]}], "default": {"harness": "codex", "model": "gpt-5.6-sol", "effort": "auto"}}
+typed opt-in: True
+exit: 0
+stdout:
+BOOTSTRAP_INFO: crew dispatch active config/crew-dispatch.json
+BOOTSTRAP_INFO: crew dispatch rule: A bounded bug fix with its root cause already stated. -> quota-balanced[claude/default/auto, codex/default/auto, grok/default/auto, agy/default/auto, pi/default/auto, pi-signed/default/auto, omp/default/auto, muse/default/auto, rovo/default/auto]
+BOOTSTRAP_INFO: crew dispatch default: codex/gpt-5.6-sol/auto
+stderr:
+<empty>
+
+bootstrap-supported-auto-without-key
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-bootstrap.sh
+config: {"rules": [{"when": "A bounded bug fix with its root cause already stated.", "use": [{"harness": "claude", "effort": "auto", "provider": "claude"}, {"harness": "codex", "effort": "auto", "provider": "codex"}, {"harness": "grok", "effort": "auto", "provider": "agy"}, {"harness": "agy", "effort": "auto", "provider": "agy"}, {"harness": "pi", "effort": "auto", "provider": "codex"}, {"harness": "pi-signed", "effort": "auto", "provider": "codex"}, {"harness": "omp", "effort": "auto", "provider": "codex"}, {"harness": "muse", "effort": "auto", "provider": "claude"}, {"harness": "rovo", "effort": "auto", "provider": "google"}]}], "default": {"harness": "codex", "model": "gpt-5.6-sol", "effort": "auto"}}
+typed opt-in: False
+exit: 0
+stdout:
+BOOTSTRAP_INFO: crew dispatch active config/crew-dispatch.json
+BOOTSTRAP_INFO: crew dispatch rule: A bounded bug fix with its root cause already stated. -> quota-balanced[claude/default/auto, codex/default/auto, grok/default/auto, agy/default/auto, pi/default/auto, pi-signed/default/auto, omp/default/auto, muse/default/auto, rovo/default/auto]
+BOOTSTRAP_INFO: crew dispatch default: codex/gpt-5.6-sol/auto
+stderr:
+<empty>
+
+auto-without-key-remains-off
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md --project jev-effort-lab
+config: {"rules": [{"when": "A bounded bug fix with its root cause already stated.", "use": [{"harness": "claude", "effort": "auto", "provider": "claude"}, {"harness": "codex", "effort": "auto", "provider": "codex"}, {"harness": "grok", "effort": "auto", "provider": "agy"}, {"harness": "agy", "effort": "auto", "provider": "agy"}, {"harness": "pi", "effort": "auto", "provider": "codex"}, {"harness": "pi-signed", "effort": "auto", "provider": "codex"}, {"harness": "omp", "effort": "auto", "provider": "codex"}, {"harness": "muse", "effort": "auto", "provider": "claude"}, {"harness": "rovo", "effort": "auto", "provider": "google"}]}], "default": {"harness": "codex", "model": "gpt-5.6-sol", "effort": "auto"}}
+typed opt-in: False
+exit: 0
+stdout:
+<empty>
+stderr:
+dispatch-resolve: off (TYPESAFE_API_KEY absent from the environment and /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/.env)
+
+bootstrap-rejects-four-no-flag-auto-profiles
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-bootstrap.sh
+config: {"rules": [{"when": "Work.", "use": [{"harness": "gemini", "effort": "auto", "provider": "google"}, {"harness": "opencode", "effort": "auto", "provider": "google"}, {"harness": "kimi", "effort": "auto", "provider": "google"}, {"harness": "cursor", "effort": "auto", "provider": "google"}]}]}
+typed opt-in: True
+exit: 0
+stdout:
+CREW_DISPATCH: invalid config/crew-dispatch.json - invalid effort: cursor:auto, gemini:auto, kimi:auto, opencode:auto
+stderr:
+<empty>
+
+resolver-rejects-gemini-auto-in-use
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md --project jev-effort-lab
+config: {"rules": [{"when": "Work.", "use": {"harness": "gemini", "effort": "auto", "provider": "google"}}]}
+typed opt-in: True
+exit: 2
+stdout:
+<empty>
+stderr:
+error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each use profile effort must be supported by its harness and model
+
+resolver-rejects-gemini-auto-in-default
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md --project jev-effort-lab
+config: {"rules": [{"when": "Work.", "use": {"harness": "codex"}}], "default": {"harness": "gemini", "effort": "auto", "provider": "google"}}
+typed opt-in: True
+exit: 2
+stdout:
+<empty>
+stderr:
+error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each default profile effort must be supported by its harness and model
+
+resolver-rejects-opencode-auto-in-use
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md --project jev-effort-lab
+config: {"rules": [{"when": "Work.", "use": {"harness": "opencode", "effort": "auto", "provider": "google"}}]}
+typed opt-in: True
+exit: 2
+stdout:
+<empty>
+stderr:
+error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each use profile effort must be supported by its harness and model
+
+resolver-rejects-opencode-auto-in-default
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md --project jev-effort-lab
+config: {"rules": [{"when": "Work.", "use": {"harness": "codex"}}], "default": {"harness": "opencode", "effort": "auto", "provider": "google"}}
+typed opt-in: True
+exit: 2
+stdout:
+<empty>
+stderr:
+error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each default profile effort must be supported by its harness and model
+
+resolver-rejects-kimi-auto-in-use
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md --project jev-effort-lab
+config: {"rules": [{"when": "Work.", "use": {"harness": "kimi", "effort": "auto", "provider": "google"}}]}
+typed opt-in: True
+exit: 2
+stdout:
+<empty>
+stderr:
+error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each use profile effort must be supported by its harness and model
+
+resolver-rejects-kimi-auto-in-default
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md --project jev-effort-lab
+config: {"rules": [{"when": "Work.", "use": {"harness": "codex"}}], "default": {"harness": "kimi", "effort": "auto", "provider": "google"}}
+typed opt-in: True
+exit: 2
+stdout:
+<empty>
+stderr:
+error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each default profile effort must be supported by its harness and model
+
+resolver-rejects-cursor-auto-in-use
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md --project jev-effort-lab
+config: {"rules": [{"when": "Work.", "use": {"harness": "cursor", "effort": "auto", "provider": "google"}}]}
+typed opt-in: True
+exit: 2
+stdout:
+<empty>
+stderr:
+error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each use profile effort must be supported by its harness and model
+
+resolver-rejects-cursor-auto-in-default
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md --project jev-effort-lab
+config: {"rules": [{"when": "Work.", "use": {"harness": "codex"}}], "default": {"harness": "cursor", "effort": "auto", "provider": "google"}}
+typed opt-in: True
+exit: 2
+stdout:
+<empty>
+stderr:
+error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each default profile effort must be supported by its harness and model
+
+bootstrap-rejects-no-flag-auto-without-key
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-bootstrap.sh
+config: {"rules": [{"when": "Work.", "use": [{"harness": "opencode", "effort": "auto", "provider": "google"}, {"harness": "kimi", "effort": "auto", "provider": "google"}, {"harness": "cursor", "effort": "auto", "provider": "google"}]}]}
+typed opt-in: False
+exit: 0
+stdout:
+CREW_DISPATCH: invalid config/crew-dispatch.json - invalid effort: cursor:auto, kimi:auto, opencode:auto
+stderr:
+<empty>
+
+bootstrap-preserves-pinned-and-omitted-efforts
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-bootstrap.sh
+config: {"rules": [{"when": "Work.", "use": [{"harness": "gemini", "model": "gemini-3.8-flash-high", "provider": "google", "effort": "high"}, {"harness": "codex", "model": "gpt-5.6-luna", "effort": "max"}, {"harness": "claude", "model": "sonnet", "effort": "high"}, {"harness": "pi", "model": "codex-native/gpt-6-astra", "provider": "codex", "effort": "ultra"}, {"harness": "gemini", "provider": "google"}, {"harness": "opencode", "provider": "google"}, {"harness": "kimi", "provider": "google"}, {"harness": "cursor", "provider": "google"}]}]}
+typed opt-in: True
+exit: 0
+stdout:
+BOOTSTRAP_INFO: crew dispatch active config/crew-dispatch.json
+BOOTSTRAP_INFO: crew dispatch rule: Work. -> quota-balanced[gemini/gemini-3.8-flash-high/high, codex/gpt-5.6-luna/max, claude/sonnet/high, pi/codex-native/gpt-6-astra/ultra, gemini, opencode, kimi, cursor]
+stderr:
+<empty>
+
+missing-rules
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md --project jev-effort-lab
+config: null
+typed opt-in: True
+exit: 0
+stdout:
+dispatch-resolve:
+  status: escalate
+  reason: no rules to match
+stderr:
+<empty>
+
+default-only-auto
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md --project jev-effort-lab
+config: {"default": {"harness": "codex", "model": "gpt-5.6-sol", "effort": "auto"}}
+typed opt-in: True
+exit: 0
+stdout:
+dispatch-resolve:
+  status: escalate
+  reason: no rules to match
+stderr:
+<empty>
+
+empty-rules-auto
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md --project jev-effort-lab
+config: {"rules": [], "default": {"harness": "codex", "model": "gpt-5.6-sol", "effort": "auto"}}
+typed opt-in: True
+exit: 0
+stdout:
+dispatch-resolve:
+  status: escalate
+  reason: no rules to match
+stderr:
+<empty>
+
+legacy-default-only
+$ /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md --project jev-effort-lab
+config: {"default": [{"harness": "gemini", "model": "gemini-3.8-flash-high", "provider": "google", "effort": "high"}, {"harness": "codex", "model": "gpt-5.6-luna", "effort": "max"}, {"harness": "claude", "model": "sonnet", "effort": "high"}, {"harness": "pi", "model": "codex-native/gpt-6-astra", "provider": "codex", "effort": "ultra"}, {"harness": "gemini", "provider": "google"}, {"harness": "opencode", "provider": "google"}, {"harness": "kimi", "provider": "google"}, {"harness": "cursor", "provider": "google"}]}
+typed opt-in: True
+exit: 0
+stdout:
+dispatch-resolve:
+  status: escalate
+  reason: no rules to match
+stderr:
+<empty>
+

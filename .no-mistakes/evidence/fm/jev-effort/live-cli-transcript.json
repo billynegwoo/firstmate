@@ -1,0 +1,682 @@
+[
+  {
+    "name": "bootstrap-supported-auto-with-key-opt-in",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-bootstrap.sh"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "A bounded bug fix with its root cause already stated.",
+          "use": [
+            {
+              "harness": "claude",
+              "effort": "auto",
+              "provider": "claude"
+            },
+            {
+              "harness": "codex",
+              "effort": "auto",
+              "provider": "codex"
+            },
+            {
+              "harness": "grok",
+              "effort": "auto",
+              "provider": "agy"
+            },
+            {
+              "harness": "agy",
+              "effort": "auto",
+              "provider": "agy"
+            },
+            {
+              "harness": "pi",
+              "effort": "auto",
+              "provider": "codex"
+            },
+            {
+              "harness": "pi-signed",
+              "effort": "auto",
+              "provider": "codex"
+            },
+            {
+              "harness": "omp",
+              "effort": "auto",
+              "provider": "codex"
+            },
+            {
+              "harness": "muse",
+              "effort": "auto",
+              "provider": "claude"
+            },
+            {
+              "harness": "rovo",
+              "effort": "auto",
+              "provider": "google"
+            }
+          ]
+        }
+      ],
+      "default": {
+        "harness": "codex",
+        "model": "gpt-5.6-sol",
+        "effort": "auto"
+      }
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 0,
+    "stdout": "BOOTSTRAP_INFO: crew dispatch active config/crew-dispatch.json\nBOOTSTRAP_INFO: crew dispatch rule: A bounded bug fix with its root cause already stated. -> quota-balanced[claude/default/auto, codex/default/auto, grok/default/auto, agy/default/auto, pi/default/auto, pi-signed/default/auto, omp/default/auto, muse/default/auto, rovo/default/auto]\nBOOTSTRAP_INFO: crew dispatch default: codex/gpt-5.6-sol/auto\n",
+    "stderr": ""
+  },
+  {
+    "name": "bootstrap-supported-auto-without-key",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-bootstrap.sh"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "A bounded bug fix with its root cause already stated.",
+          "use": [
+            {
+              "harness": "claude",
+              "effort": "auto",
+              "provider": "claude"
+            },
+            {
+              "harness": "codex",
+              "effort": "auto",
+              "provider": "codex"
+            },
+            {
+              "harness": "grok",
+              "effort": "auto",
+              "provider": "agy"
+            },
+            {
+              "harness": "agy",
+              "effort": "auto",
+              "provider": "agy"
+            },
+            {
+              "harness": "pi",
+              "effort": "auto",
+              "provider": "codex"
+            },
+            {
+              "harness": "pi-signed",
+              "effort": "auto",
+              "provider": "codex"
+            },
+            {
+              "harness": "omp",
+              "effort": "auto",
+              "provider": "codex"
+            },
+            {
+              "harness": "muse",
+              "effort": "auto",
+              "provider": "claude"
+            },
+            {
+              "harness": "rovo",
+              "effort": "auto",
+              "provider": "google"
+            }
+          ]
+        }
+      ],
+      "default": {
+        "harness": "codex",
+        "model": "gpt-5.6-sol",
+        "effort": "auto"
+      }
+    },
+    "typed_opt_in": false,
+    "live": true,
+    "exit_code": 0,
+    "stdout": "BOOTSTRAP_INFO: crew dispatch active config/crew-dispatch.json\nBOOTSTRAP_INFO: crew dispatch rule: A bounded bug fix with its root cause already stated. -> quota-balanced[claude/default/auto, codex/default/auto, grok/default/auto, agy/default/auto, pi/default/auto, pi-signed/default/auto, omp/default/auto, muse/default/auto, rovo/default/auto]\nBOOTSTRAP_INFO: crew dispatch default: codex/gpt-5.6-sol/auto\n",
+    "stderr": ""
+  },
+  {
+    "name": "auto-without-key-remains-off",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh",
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md",
+      "--project",
+      "jev-effort-lab"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "A bounded bug fix with its root cause already stated.",
+          "use": [
+            {
+              "harness": "claude",
+              "effort": "auto",
+              "provider": "claude"
+            },
+            {
+              "harness": "codex",
+              "effort": "auto",
+              "provider": "codex"
+            },
+            {
+              "harness": "grok",
+              "effort": "auto",
+              "provider": "agy"
+            },
+            {
+              "harness": "agy",
+              "effort": "auto",
+              "provider": "agy"
+            },
+            {
+              "harness": "pi",
+              "effort": "auto",
+              "provider": "codex"
+            },
+            {
+              "harness": "pi-signed",
+              "effort": "auto",
+              "provider": "codex"
+            },
+            {
+              "harness": "omp",
+              "effort": "auto",
+              "provider": "codex"
+            },
+            {
+              "harness": "muse",
+              "effort": "auto",
+              "provider": "claude"
+            },
+            {
+              "harness": "rovo",
+              "effort": "auto",
+              "provider": "google"
+            }
+          ]
+        }
+      ],
+      "default": {
+        "harness": "codex",
+        "model": "gpt-5.6-sol",
+        "effort": "auto"
+      }
+    },
+    "typed_opt_in": false,
+    "live": true,
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "dispatch-resolve: off (TYPESAFE_API_KEY absent from the environment and /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/.env)\n"
+  },
+  {
+    "name": "bootstrap-rejects-four-no-flag-auto-profiles",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-bootstrap.sh"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "Work.",
+          "use": [
+            {
+              "harness": "gemini",
+              "effort": "auto",
+              "provider": "google"
+            },
+            {
+              "harness": "opencode",
+              "effort": "auto",
+              "provider": "google"
+            },
+            {
+              "harness": "kimi",
+              "effort": "auto",
+              "provider": "google"
+            },
+            {
+              "harness": "cursor",
+              "effort": "auto",
+              "provider": "google"
+            }
+          ]
+        }
+      ]
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 0,
+    "stdout": "CREW_DISPATCH: invalid config/crew-dispatch.json - invalid effort: cursor:auto, gemini:auto, kimi:auto, opencode:auto\n",
+    "stderr": ""
+  },
+  {
+    "name": "resolver-rejects-gemini-auto-in-use",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh",
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md",
+      "--project",
+      "jev-effort-lab"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "Work.",
+          "use": {
+            "harness": "gemini",
+            "effort": "auto",
+            "provider": "google"
+          }
+        }
+      ]
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 2,
+    "stdout": "",
+    "stderr": "error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each use profile effort must be supported by its harness and model\n"
+  },
+  {
+    "name": "resolver-rejects-gemini-auto-in-default",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh",
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md",
+      "--project",
+      "jev-effort-lab"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "Work.",
+          "use": {
+            "harness": "codex"
+          }
+        }
+      ],
+      "default": {
+        "harness": "gemini",
+        "effort": "auto",
+        "provider": "google"
+      }
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 2,
+    "stdout": "",
+    "stderr": "error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each default profile effort must be supported by its harness and model\n"
+  },
+  {
+    "name": "resolver-rejects-opencode-auto-in-use",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh",
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md",
+      "--project",
+      "jev-effort-lab"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "Work.",
+          "use": {
+            "harness": "opencode",
+            "effort": "auto",
+            "provider": "google"
+          }
+        }
+      ]
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 2,
+    "stdout": "",
+    "stderr": "error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each use profile effort must be supported by its harness and model\n"
+  },
+  {
+    "name": "resolver-rejects-opencode-auto-in-default",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh",
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md",
+      "--project",
+      "jev-effort-lab"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "Work.",
+          "use": {
+            "harness": "codex"
+          }
+        }
+      ],
+      "default": {
+        "harness": "opencode",
+        "effort": "auto",
+        "provider": "google"
+      }
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 2,
+    "stdout": "",
+    "stderr": "error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each default profile effort must be supported by its harness and model\n"
+  },
+  {
+    "name": "resolver-rejects-kimi-auto-in-use",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh",
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md",
+      "--project",
+      "jev-effort-lab"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "Work.",
+          "use": {
+            "harness": "kimi",
+            "effort": "auto",
+            "provider": "google"
+          }
+        }
+      ]
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 2,
+    "stdout": "",
+    "stderr": "error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each use profile effort must be supported by its harness and model\n"
+  },
+  {
+    "name": "resolver-rejects-kimi-auto-in-default",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh",
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md",
+      "--project",
+      "jev-effort-lab"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "Work.",
+          "use": {
+            "harness": "codex"
+          }
+        }
+      ],
+      "default": {
+        "harness": "kimi",
+        "effort": "auto",
+        "provider": "google"
+      }
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 2,
+    "stdout": "",
+    "stderr": "error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each default profile effort must be supported by its harness and model\n"
+  },
+  {
+    "name": "resolver-rejects-cursor-auto-in-use",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh",
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md",
+      "--project",
+      "jev-effort-lab"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "Work.",
+          "use": {
+            "harness": "cursor",
+            "effort": "auto",
+            "provider": "google"
+          }
+        }
+      ]
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 2,
+    "stdout": "",
+    "stderr": "error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each use profile effort must be supported by its harness and model\n"
+  },
+  {
+    "name": "resolver-rejects-cursor-auto-in-default",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh",
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md",
+      "--project",
+      "jev-effort-lab"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "Work.",
+          "use": {
+            "harness": "codex"
+          }
+        }
+      ],
+      "default": {
+        "harness": "cursor",
+        "effort": "auto",
+        "provider": "google"
+      }
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 2,
+    "stdout": "",
+    "stderr": "error: malformed rules file: /data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/config/crew-dispatch.json - each default profile effort must be supported by its harness and model\n"
+  },
+  {
+    "name": "bootstrap-rejects-no-flag-auto-without-key",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-bootstrap.sh"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "Work.",
+          "use": [
+            {
+              "harness": "opencode",
+              "effort": "auto",
+              "provider": "google"
+            },
+            {
+              "harness": "kimi",
+              "effort": "auto",
+              "provider": "google"
+            },
+            {
+              "harness": "cursor",
+              "effort": "auto",
+              "provider": "google"
+            }
+          ]
+        }
+      ]
+    },
+    "typed_opt_in": false,
+    "live": true,
+    "exit_code": 0,
+    "stdout": "CREW_DISPATCH: invalid config/crew-dispatch.json - invalid effort: cursor:auto, kimi:auto, opencode:auto\n",
+    "stderr": ""
+  },
+  {
+    "name": "bootstrap-preserves-pinned-and-omitted-efforts",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-bootstrap.sh"
+    ],
+    "configuration": {
+      "rules": [
+        {
+          "when": "Work.",
+          "use": [
+            {
+              "harness": "gemini",
+              "model": "gemini-3.8-flash-high",
+              "provider": "google",
+              "effort": "high"
+            },
+            {
+              "harness": "codex",
+              "model": "gpt-5.6-luna",
+              "effort": "max"
+            },
+            {
+              "harness": "claude",
+              "model": "sonnet",
+              "effort": "high"
+            },
+            {
+              "harness": "pi",
+              "model": "codex-native/gpt-6-astra",
+              "provider": "codex",
+              "effort": "ultra"
+            },
+            {
+              "harness": "gemini",
+              "provider": "google"
+            },
+            {
+              "harness": "opencode",
+              "provider": "google"
+            },
+            {
+              "harness": "kimi",
+              "provider": "google"
+            },
+            {
+              "harness": "cursor",
+              "provider": "google"
+            }
+          ]
+        }
+      ]
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 0,
+    "stdout": "BOOTSTRAP_INFO: crew dispatch active config/crew-dispatch.json\nBOOTSTRAP_INFO: crew dispatch rule: Work. -> quota-balanced[gemini/gemini-3.8-flash-high/high, codex/gpt-5.6-luna/max, claude/sonnet/high, pi/codex-native/gpt-6-astra/ultra, gemini, opencode, kimi, cursor]\n",
+    "stderr": ""
+  },
+  {
+    "name": "missing-rules",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh",
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md",
+      "--project",
+      "jev-effort-lab"
+    ],
+    "configuration": null,
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 0,
+    "stdout": "dispatch-resolve:\n  status: escalate\n  reason: no rules to match\n",
+    "stderr": ""
+  },
+  {
+    "name": "default-only-auto",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh",
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md",
+      "--project",
+      "jev-effort-lab"
+    ],
+    "configuration": {
+      "default": {
+        "harness": "codex",
+        "model": "gpt-5.6-sol",
+        "effort": "auto"
+      }
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 0,
+    "stdout": "dispatch-resolve:\n  status: escalate\n  reason: no rules to match\n",
+    "stderr": ""
+  },
+  {
+    "name": "empty-rules-auto",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh",
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md",
+      "--project",
+      "jev-effort-lab"
+    ],
+    "configuration": {
+      "rules": [],
+      "default": {
+        "harness": "codex",
+        "model": "gpt-5.6-sol",
+        "effort": "auto"
+      }
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 0,
+    "stdout": "dispatch-resolve:\n  status: escalate\n  reason: no rules to match\n",
+    "stderr": ""
+  },
+  {
+    "name": "legacy-default-only",
+    "command": [
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/bin/fm-dispatch-resolve.sh",
+      "/data/codex/.no-mistakes/worktrees/7eae57f62fbf/01M347KYPDCYQPWNDNMQWVJX5F/.test-tmp/jev-effort/manual-886cagpp/brief.md",
+      "--project",
+      "jev-effort-lab"
+    ],
+    "configuration": {
+      "default": [
+        {
+          "harness": "gemini",
+          "model": "gemini-3.8-flash-high",
+          "provider": "google",
+          "effort": "high"
+        },
+        {
+          "harness": "codex",
+          "model": "gpt-5.6-luna",
+          "effort": "max"
+        },
+        {
+          "harness": "claude",
+          "model": "sonnet",
+          "effort": "high"
+        },
+        {
+          "harness": "pi",
+          "model": "codex-native/gpt-6-astra",
+          "provider": "codex",
+          "effort": "ultra"
+        },
+        {
+          "harness": "gemini",
+          "provider": "google"
+        },
+        {
+          "harness": "opencode",
+          "provider": "google"
+        },
+        {
+          "harness": "kimi",
+          "provider": "google"
+        },
+        {
+          "harness": "cursor",
+          "provider": "google"
+        }
+      ]
+    },
+    "typed_opt_in": true,
+    "live": true,
+    "exit_code": 0,
+    "stdout": "dispatch-resolve:\n  status: escalate\n  reason: no rules to match\n",
+    "stderr": ""
+  }
+]
