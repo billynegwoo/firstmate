@@ -318,6 +318,12 @@ TYPESAFE_API_KEY=$KEY run code out err "$BRIEF"
 assert_contains "$out" 'candidate: gemini:gemini-3.8-flash-high  provider=google  scope=all_models  remaining=72%  spendPriority=0.3  runway=through_reset  -> eligible' "Gemini resolves through its explicit provider"
 assert_contains "$out" "  profile: --harness 'gemini' --model 'gemini-3.8-flash-high'" "Gemini is a typed verified dispatch harness"
 
+jq '.rules[0].use.effort = "high"' "$GEMINI_RULE" > "$RULES"
+reset_log
+TYPESAFE_API_KEY=$KEY run code out err "$BRIEF"
+expect_code 0 "$code" "a pinned Gemini effort remains accepted"
+assert_contains "$out" "  profile: --harness 'gemini' --model 'gemini-3.8-flash-high' --effort 'high'" "a pinned Gemini effort is preserved"
+
 cp "$ROOT/docs/examples/crew-dispatch.json" "$RULES"
 cat > "$RESPONSE" <<'JSON'
 {"model":"jev-1.13.0","answers":{"rule":{"type":"choice","choice":"default","confidence":0.9,"probabilities":{"rule_1":0.02,"rule_2":0.02,"rule_3":0.02,"default":0.94}}},"usage":{"input_tokens":812,"output_tokens":60}}
@@ -704,21 +710,26 @@ for mapping in \
   assert_contains "$out" " --effort '$expected'" "$harness receives its supported level $expected"
 done
 for no_flag in \
-  'cursor|{"harness":"cursor","model":"cursor-grok-4.6-medium","effort":"auto"}|cursor:cursor-grok-4.6-medium' \
-  'gemini|{"harness":"gemini","model":"gemini-3.8-flash-high","provider":"google","effort":"auto"}|gemini:gemini-3.8-flash-high' \
-  'kimi|{"harness":"kimi","model":"kimi-code/k3","provider":"agy","effort":"auto"}|kimi:kimi-code/k3' \
-  'opencode|{"harness":"opencode","model":"anthropic/claude-sonnet-4-5","provider":"claude","effort":"auto"}|opencode:anthropic/claude-sonnet-4-5' ; do
-  IFS='|' read -r harness profile shown <<<"$no_flag"
-  printf '{"rules":[{"when":"A bug fix.","use":%s}]}\n' "$profile" > "$RULES"
-  reset_log
-  write_effort_response "$RESPONSE" rule_1 0.9 xhigh 0.8
-  TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$AUTO_QUOTA" run code out err "$BRIEF"
-  assert_contains "$out" '  status: clear' "$harness still resolves under auto"
-  assert_contains "$out" "  note: effort auto -> omitted ($harness has no supported level)" "$harness reports the omitted level"
-  assert_contains "$out" "candidate: $shown" "$harness candidate is listed"
-  assert_not_contains "$out" '--effort' "$harness receives no --effort flag"
+  'cursor|{"harness":"cursor","model":"cursor-grok-4.6-medium","effort":"auto"}' \
+  'gemini|{"harness":"gemini","model":"gemini-3.8-flash-high","provider":"google","effort":"auto"}' \
+  'kimi|{"harness":"kimi","model":"kimi-code/k3","provider":"agy","effort":"auto"}' \
+  'opencode|{"harness":"opencode","model":"anthropic/claude-sonnet-4-5","provider":"claude","effort":"auto"}' ; do
+  IFS='|' read -r harness profile <<<"$no_flag"
+  for location in use default; do
+    case "$location" in
+      use) printf '{"rules":[{"when":"A bug fix.","use":%s}]}\n' "$profile" > "$RULES" ;;
+      default) printf '{"rules":[{"when":"A bug fix.","use":{"harness":"codex"}}],"default":%s}\n' "$profile" > "$RULES" ;;
+    esac
+    reset_log
+    TYPESAFE_API_KEY=$KEY run code out err "$BRIEF"
+    expect_code 2 "$code" "$harness auto in $location is a configuration error"
+    assert_equals '' "$out" "$harness auto in $location emits no dispatch result"
+    assert_contains "$err" "malformed rules file: $RULES - each $location profile effort must be supported by its harness and model" "$harness auto in $location is unsupported"
+    assert_absent "$LOG/argv" "$harness auto in $location never calls the model"
+    assert_absent "$LOG/quota-axi.calls" "$harness auto in $location never reads quota"
+  done
 done
-pass "auto effort lowers to each harness's highest supported level and omits it on no-effort harnesses"
+pass "auto effort maps to supported levels and rejects harnesses without effort flags"
 
 # --- pinned efforts are untouched by the effort answer ---------------------------
 PINNED_WINS="$TMP_ROOT/pinned-wins.json"

@@ -32,10 +32,11 @@
 #   the eligible candidates. Only when the chosen candidate declares effort
 #   "auto" does the effort answer matter: it is validated and floored on its
 #   own, then lowered to the highest level effort_ok accepts for that harness
-#   and model (omitted entirely on gemini, opencode, kimi, and cursor, which
-#   fm-spawn.sh launches with no effort flag), so the
+#   and model, so the
 #   profile line never carries auto or an unsupported level; a pinned effort
-#   is passed through untouched. The model never
+#   is passed through untouched. Auto is accepted only on harnesses with a
+#   supported launch effort flag and rejected on gemini, opencode, kimi, and
+#   cursor as a configuration error. The model never
 #   sees quota, catalogs, approvals, `why`, or `use`. With no rules, it returns
 #   a non-clear result so firstmate keeps using the existing intake.
 #   docs/configuration.md "Crew dispatch profiles" owns the declared fields and
@@ -49,7 +50,7 @@
 #     effort: <level> confidence: <c> probabilities: low=.. medium=.. high=.. xhigh=..   (only when the effort question was asked)
 #     effort: <level> confidence: <c> invalid: <why>   (asked but the effort answer is malformed)
 #     candidate: <harness>:<model> provider=.. scope=.. remaining=..% spendPriority=.. runway=.. -> eligible | eligible, unranked: <reason> | not eligible: <reason>
-#     note: effort auto -> <level> | omitted (<harness> has no supported level)   (chosen candidate declared auto)
+#     note: effort auto -> <level>   (chosen candidate declared auto)
 #     profile: --harness <h> [--model <m>] [--effort <e>]     (status clear only)
 #   clear     -> pass the profile line to fm-spawn.sh unless you state a reason to override
 #   ambiguous -> rule confidence, or effort confidence for an auto candidate, below the floor; decide as today from the probabilities
@@ -89,13 +90,13 @@ CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 CONFIDENCE_FLOOR=0.6
 # One jq owner for "this harness and model accept this concrete effort", shared
 # by the rules validation and the auto-effort mapping below; "auto" is the
-# opt-in that defers the level to Jev and is valid on every verified harness.
+# opt-in that defers the level to Jev on harnesses with a launch effort flag.
 # shellcheck disable=SC2016 # jq program text: $h, $m, and $e are jq variables.
 EFFORT_OK_JQ='
   def effort_ok($h; $m; $e):
     if $e == null then true
     elif ($e | type) != "string" then false
-    elif $e == "auto" then true
+    elif $e == "auto" then (["gemini","opencode","kimi","cursor"] | index($h)) == null
     elif $e == "ultra" then (($h == "pi" or $h == "pi-signed") and (($m | type) == "string") and ($m | startswith("codex-native/")) and ($m | length) > 13)
     elif $h == "claude" then (["low","medium","high","xhigh","max"] | index($e)) != null
     elif $h == "codex" then ((["low","medium","high","xhigh"] | index($e)) != null or ($e == "max" and $m == "gpt-5.6-luna"))
@@ -320,17 +321,11 @@ RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --argjson lat "$LAT_MS" --arg non
      or (all($ea.probabilities[]; type == "number" and . >= 0 and . <= 1) | not)
      or (($ea.probabilities | [.[]] | add) as $t | $t < 0.99 or $t > 1.01) then "effort probabilities must name exactly low, medium, high, xhigh with numeric values summing to about 1"
    else null end) as $effort_invalid |
-  # A harness fm-spawn.sh launches with no effort flag (gemini, opencode,
-  # kimi, cursor) gets no level at all: effort_ok keeps accepting a pinned
-  # value on gemini for old configurations, but acceptance is not a launch flag.
-  def launch_supported($h; $m; $e):
-    if $h == "gemini" or $h == "opencode" or $h == "kimi" or $h == "cursor" then false
-    else effort_ok($h; $m; $e) end;
   def effort_resolved($c):
     if $c.effort != "auto" then {effort: $c.effort}
     else ($ladder | index($ea.choice)) as $i
-      | ([$ladder[0:($i + 1)] | reverse[] | select(. as $e | launch_supported($c.harness; $c.model; $e))] | first) as $mapped
-      | {effort: $mapped, note: ("effort auto -> " + (if $mapped == null then "omitted (\($c.harness) has no supported level)" else $mapped end))}
+      | ([$ladder[0:($i + 1)] | reverse[] | select(. as $e | effort_ok($c.harness; $c.model; $e))] | first) as $mapped
+      | {effort: $mapped, note: ("effort auto -> " + $mapped)}
     end;
   def prov($p; $lane): quota_row($q; $p; $lane);
   def rows($p; $lane): (prov($p; $lane) | .quotaSemantics.effectiveAvailability // []);
