@@ -15,26 +15,19 @@
 #
 # What it does when on with at least one rule: one POST to
 #   https://api.typesafe.ai/v1/systemone with the project name and the whole brief as
-#   state and ONE Choice question whose
+#   state and a rule Choice question whose
 #   options are every rule's `when` from config/crew-dispatch.json plus one
-#   fixed generic none option. When any configured profile declares
-#   effort "auto", the same request carries a second Choice question whose
-#   options are low, medium, high, and xhigh (never max or ultra), judged on
-#   the reasoning the task itself needs. Jev returns the matched rule, a
-#   probability per option, and a confidence, and the effort answer in the
-#   same shape. Everything after that is jq: the confidence
+#   fixed generic none option. A configured effort "auto" adds an effort
+#   Choice to the same request; the operator contract below owns its criteria
+#   and mapping. Jev returns the matched rule, a probability per option, and
+#   a confidence. Everything after that is jq: the confidence
 #   floor, the rule's declared `approval` and `floor`, each profile's declared
 #   `provider` and `floor`, the quota rows from ONE quota-axi --json snapshot
 #   (schema 5 or 6; each candidate binds to one row through quota_row in
 #   bin/fm-quota-axi-lib.sh, so a Pi lane such as openai-codex-work/...
 #   reads its own account's row and an expanded provider with no row for the
 #   candidate is unmeasured, never blocked), and the spendPriority argmax over
-#   the eligible candidates. Only when the chosen candidate declares effort
-#   "auto" does the effort answer matter: it is validated and floored on its
-#   own, then lowered to the highest level effort_ok accepts for that harness
-#   and model, so the
-#   profile line never carries auto or an unsupported level; a pinned effort
-#   is passed through untouched. Auto is accepted only on harnesses with a
+#   the eligible candidates. Auto is accepted only on harnesses with a
 #   supported launch effort flag and rejected on gemini, opencode, kimi, and
 #   cursor as a configuration error. The model never
 #   sees quota, catalogs, approvals, `why`, or `use`. With no rules, it returns
@@ -50,7 +43,7 @@
 #     effort: <level> confidence: <c> probabilities: low=.. medium=.. high=.. xhigh=..   (only when the effort question was asked)
 #     effort: <level> confidence: <c> invalid: <why>   (asked but the effort answer is malformed)
 #     candidate: <harness>:<model> provider=.. scope=.. remaining=..% spendPriority=.. runway=.. -> eligible | eligible, unranked: <reason> | not eligible: <reason>
-#     note: effort auto -> <level>   (chosen candidate declared auto)
+#     note: effort auto -> <level>   (status clear and chosen candidate declared auto)
 #     profile: --harness <h> [--model <m>] [--effort <e>]     (status clear only)
 #   clear     -> pass the profile line to fm-spawn.sh unless you state a reason to override
 #   ambiguous -> rule confidence, or effort confidence for an auto candidate, below the floor; decide as today from the probabilities
