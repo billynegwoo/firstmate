@@ -466,7 +466,7 @@ This section is the single owner of the canonical schema and its per-field seman
       "approval": "captain",
       "floor": { "scope": "<quota-axi scope>", "min_percent": 20, "provider": "<quota-axi provider>" },
       "use": [
-        { "harness": "<adapter>", "model": "<optional model>", "effort": "<low|medium|high|xhigh|max|ultra, optional>", "provider": "<optional quota-axi provider>", "floor": { "scope": "<quota-axi scope>", "min_percent": 50 } }
+        { "harness": "<adapter>", "model": "<optional model>", "effort": "<low|medium|high|xhigh|max|ultra|auto, optional>", "provider": "<optional quota-axi provider>", "floor": { "scope": "<quota-axi scope>", "min_percent": 50 } }
       ],
       "why": "<optional rationale that helps firstmate choose>"
     }
@@ -499,6 +499,8 @@ An absent or unknown named row also makes the candidate unrankable and is report
 `ultra` is native-only: the model-aware validation contract and launch mapping are owned by `bin/fm-harness.sh validate-native-effort` and `bin/fm-spawn.sh` respectively.
 Codex `max` is valid when the profile selects `gpt-5.6-luna`, whose installed catalog entry supports that reasoning level.
 An omitted model or effort means the selected harness uses its own default for that axis.
+`effort: "auto"` is accepted on every verified harness and defers the level to [typed dispatch resolution](#typed-dispatch-resolution-env-typesafe_api_key), which classifies the reasoning the task needs and emits a concrete supported level, or none on a harness with no effort flag, so the literal `auto` never reaches `fm-spawn.sh`.
+Without the key, or on any non-clear result, firstmate reads an `auto` profile as one that specifies no effort and resolves a concrete level through the `harness-adapters` effort fallback before spawning.
 Every profile array is an implicit quota-aware choice resolved through `quota-array-dispatch`.
 If no dispatch rule fits, firstmate resolves `default` through the same object-or-array path before falling back to `config/crew-harness`.
 Except for `ultra`, which refuses unsupported profiles under the native-effort contract above, an effort value the chosen harness does not accept is recorded as `effort=` in task meta for traceability but omitted from the launch flags.
@@ -526,6 +528,7 @@ bin/fm-dispatch-resolve.sh data/<id>/brief.md --project <name>        # TOON blo
 
 Firstmate invokes the resolve path directly after writing the brief, without a preflight; the absent-key off line is handled exactly like every other non-clear outcome.
 When on and at least one rule exists, the tool sends the project name and the whole brief as state and asks one Choice question whose options are every rule's `when` plus the fixed neutral option for no matching rule; the model never sees quota, catalogs, `why`, `use`, or approvals.
+When any configured profile declares `effort: "auto"`, the same request asks a second Choice question over `low`, `medium`, `high`, and `xhigh`, judged on the reasoning the requested task itself needs rather than the generic scaffold every brief carries; `max` and `ultra` are never offered.
 An absent rules file, a default-only file, or `rules: []` returns the non-clear reason `no rules to match` without a model or quota request, leaving firstmate's existing routing in control; an existing but unreadable or malformed rules file, including a broken symlink, remains an actionable exit 2 configuration error.
 Everything after the answer runs in code: the confidence floor, the matched rule's `approval` and `floor`, each candidate's `provider` and `floor`, every applicable account-wide and model/product row from one `quota-axi --json` snapshot, and the numeric `spendPriority` argmax over candidates using each candidate's limiting row.
 The [shared quota library](../bin/fm-quota-axi-lib.sh) accepts schema 5 and schema 6 and implements the [account-matching contract](../.agents/skills/quota-array-dispatch/SKILL.md#1-eligibility).
@@ -533,8 +536,10 @@ An expanded provider with no matching account row leaves the candidate eligible 
 Known applicable rows from a provider with partial quota semantics remain rankable; rows whose own status is not known remain unrankable.
 Any applicable `exhausted_now` row or known zero bound makes that candidate ineligible, and a known profile-floor shortfall does the same before unrelated quota uncertainty is considered.
 Missing or nonnumeric `spendPriority` evidence is never ranked, and every candidate is printed beside its evidence or the reason it was not rankable, including on ambiguous and approval-gated outcomes that emit no profile.
+The effort answer is validated on its own, in the rule answer's shape over exactly the four offered levels, and consulted only when the chosen candidate declared `auto`: a missing or malformed effort answer is then an `error`, an effort confidence below the same 0.6 floor is `ambiguous`, and otherwise the level is lowered to the highest one the resolver's harness-and-model effort check accepts, or omitted on `gemini`, `opencode`, `kimi`, and `cursor`, which `fm-spawn.sh` launches with no effort flag, so the `profile:` line never carries `auto` or an unsupported level.
+A pinned effort is passed through untouched whatever the effort answer says, and the output reports the effort answer with its confidence and probabilities, or why it is invalid, plus the mapped level.
 On the opted-in path, duplicate concrete profiles with the same harness, model, and effort inside one rule or the default array are configuration errors rather than ties.
-The result is one of `clear` (a `profile:` line ready for `fm-spawn.sh`), `ambiguous` (confidence below the floor), `escalate` (an approval-gated rule, unverifiable rule floor, nothing rankable, or a genuine tie), or `error` (API, network, malformed response metadata, rendering, or quota-axi failure), and every one of them exits 0.
+The result is one of `clear` (a `profile:` line ready for `fm-spawn.sh`), `ambiguous` (rule confidence, or effort confidence for an `auto` candidate, below the floor), `escalate` (an approval-gated rule, unverifiable rule floor, nothing rankable, or a genuine tie), or `error` (API, network, malformed response metadata, a malformed effort answer for an `auto` candidate, rendering, or quota-axi failure), and every one of them exits 0.
 Response probabilities must contain exactly every offered choice, use numeric values from 0 through 1, and sum to approximately 1 within 0.01.
 Only a usage or configuration error exits 2: an unreadable brief, an existing but unreadable or malformed canonical rules file, or missing `jq`, each reported and never selected around.
 Missing `curl` is a normal structured `error` outcome with exit 0 so firstmate uses today's routing.

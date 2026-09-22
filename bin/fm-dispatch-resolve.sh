@@ -17,15 +17,25 @@
 #   https://api.typesafe.ai/v1/systemone with the project name and the whole brief as
 #   state and ONE Choice question whose
 #   options are every rule's `when` from config/crew-dispatch.json plus one
-#   fixed generic none option. Jev returns the matched rule, a probability per
-#   option, and a confidence. Everything after that is jq: the confidence
+#   fixed generic none option. When any configured profile declares
+#   effort "auto", the same request carries a second Choice question whose
+#   options are low, medium, high, and xhigh (never max or ultra), judged on
+#   the reasoning the task itself needs. Jev returns the matched rule, a
+#   probability per option, and a confidence, and the effort answer in the
+#   same shape. Everything after that is jq: the confidence
 #   floor, the rule's declared `approval` and `floor`, each profile's declared
 #   `provider` and `floor`, the quota rows from ONE quota-axi --json snapshot
 #   (schema 5 or 6; each candidate binds to one row through quota_row in
 #   bin/fm-quota-axi-lib.sh, so a Pi lane such as openai-codex-work/...
 #   reads its own account's row and an expanded provider with no row for the
 #   candidate is unmeasured, never blocked), and the spendPriority argmax over
-#   the eligible candidates. The model never
+#   the eligible candidates. Only when the chosen candidate declares effort
+#   "auto" does the effort answer matter: it is validated and floored on its
+#   own, then lowered to the highest level effort_ok accepts for that harness
+#   and model (omitted entirely on gemini, opencode, kimi, and cursor, which
+#   fm-spawn.sh launches with no effort flag), so the
+#   profile line never carries auto or an unsupported level; a pinned effort
+#   is passed through untouched. The model never
 #   sees quota, catalogs, approvals, `why`, or `use`. With no rules, it returns
 #   a non-clear result so firstmate keeps using the existing intake.
 #   docs/configuration.md "Crew dispatch profiles" owns the declared fields and
@@ -36,12 +46,15 @@
 #     status: clear | ambiguous | escalate | error
 #     model/latency_ms/tokens, rule (when excerpt) and confidence, probabilities
 #     reason: <why the status is not clear>
+#     effort: <level> confidence: <c> probabilities: low=.. medium=.. high=.. xhigh=..   (only when the effort question was asked)
+#     effort: <level> confidence: <c> invalid: <why>   (asked but the effort answer is malformed)
 #     candidate: <harness>:<model> provider=.. scope=.. remaining=..% spendPriority=.. runway=.. -> eligible | eligible, unranked: <reason> | not eligible: <reason>
+#     note: effort auto -> <level> | omitted (<harness> has no supported level)   (chosen candidate declared auto)
 #     profile: --harness <h> [--model <m>] [--effort <e>]     (status clear only)
 #   clear     -> pass the profile line to fm-spawn.sh unless you state a reason to override
-#   ambiguous -> confidence below the floor; decide as today from the probabilities
+#   ambiguous -> rule confidence, or effort confidence for an auto candidate, below the floor; decide as today from the probabilities
 #   escalate  -> the rule requires captain approval, no candidate is rankable, or a genuine tie
-#   error     -> API, network, response, or quota-axi failure; decide as today
+#   error     -> API, network, response, or quota-axi failure, or a malformed effort answer for an auto candidate; decide as today
 #   Every outcome exits 0 so an intake is never blocked by this tool.
 #   Exit 2 only for a usage or configuration error (unreadable brief, an
 #   existing unreadable rules file, malformed rules, or missing jq), which is
@@ -74,6 +87,23 @@ CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 . "$SCRIPT_DIR/fm-timing-lib.sh"
 
 CONFIDENCE_FLOOR=0.6
+# One jq owner for "this harness and model accept this concrete effort", shared
+# by the rules validation and the auto-effort mapping below; "auto" is the
+# opt-in that defers the level to Jev and is valid on every verified harness.
+# shellcheck disable=SC2016 # jq program text: $h, $m, and $e are jq variables.
+EFFORT_OK_JQ='
+  def effort_ok($h; $m; $e):
+    if $e == null then true
+    elif ($e | type) != "string" then false
+    elif $e == "auto" then true
+    elif $e == "ultra" then (($h == "pi" or $h == "pi-signed") and (($m | type) == "string") and ($m | startswith("codex-native/")) and ($m | length) > 13)
+    elif $h == "claude" then (["low","medium","high","xhigh","max"] | index($e)) != null
+    elif $h == "codex" then ((["low","medium","high","xhigh"] | index($e)) != null or ($e == "max" and $m == "gpt-5.6-luna"))
+    elif $h == "grok" or $h == "agy" then (["low","medium","high"] | index($e)) != null
+    elif $h == "pi" or $h == "pi-signed" or $h == "omp" or $h == "muse" then (["low","medium","high","xhigh","max"] | index($e)) != null
+    elif $h == "rovo" then (["low","medium","high","max"] | index($e)) != null
+    elif $h == "opencode" or $h == "kimi" or $h == "cursor" then false
+    else true end;'
 TS_MODEL=jev-latest
 TS_BASE=https://api.typesafe.ai
 TS_TIMEOUT=5
@@ -125,20 +155,9 @@ VERIFIED_HARNESSES=$(fm_control_harnesses | jq -Rsc 'split("\n") | map(select(le
 
 # The fields this tool consumes must be well formed; bootstrap owns the wider
 # schema diagnostic, but an intake never selects around a malformed file.
-rules_err=$(jq -r --argjson verified_harnesses "$VERIFIED_HARNESSES" --arg provider_re "$FM_QUOTA_PROVIDER_ID_RE" '
+rules_err=$(jq -r --argjson verified_harnesses "$VERIFIED_HARNESSES" --arg provider_re "$FM_QUOTA_PROVIDER_ID_RE" "$EFFORT_OK_JQ"'
   def verified($h): $verified_harnesses | index($h);
   def provider_id($p): ($p | type) == "string" and ($p | test($provider_re));
-  def effort_ok($h; $m; $e):
-    if $e == null then true
-    elif ($e | type) != "string" then false
-    elif $e == "ultra" then (($h == "pi" or $h == "pi-signed") and (($m | type) == "string") and ($m | startswith("codex-native/")) and ($m | length) > 13)
-    elif $h == "claude" then (["low","medium","high","xhigh","max"] | index($e)) != null
-    elif $h == "codex" then ((["low","medium","high","xhigh"] | index($e)) != null or ($e == "max" and $m == "gpt-5.6-luna"))
-    elif $h == "grok" or $h == "agy" then (["low","medium","high"] | index($e)) != null
-    elif $h == "pi" or $h == "pi-signed" or $h == "omp" or $h == "muse" then (["low","medium","high","xhigh","max"] | index($e)) != null
-    elif $h == "rovo" then (["low","medium","high","max"] | index($e)) != null
-    elif $h == "opencode" or $h == "kimi" or $h == "cursor" then false
-    else true end;
   def profiles($v): if ($v | type) == "array" then $v elif ($v | type) == "object" then [$v] else [] end;
   def floor_bad($f; $need_provider):
     ($f | type) != "object"
@@ -208,6 +227,10 @@ done < <(jq -r '
   | map(.harness) | unique | .[]' "$RULES")
 
 RULE_COUNT=$(jq -r '(.rules // []) | length' "$RULES")
+# The effort question rides along only when some profile defers its level.
+EFFORT_ASKED=$(jq -r '
+  def profiles($v): if ($v | type) == "array" then $v elif ($v | type) == "object" then [$v] else [] end;
+  any(([((.rules // [])[]) | profiles(.use)[]] + profiles(.default // null))[]; .effort == "auto")' "$RULES")
 
 emit_error() {
   local reason=$1
@@ -226,19 +249,30 @@ trap 'rm -f "$RULES" "$RESP_FILE" "$QUOTA"' EXIT
 LAT_MS=null
 command -v curl >/dev/null 2>&1 || emit_error "curl not installed"
   REQUEST=$(jq -n --rawfile brief "$BRIEF" --arg project "$PROJECT" --arg model "$TS_MODEL" \
-    --arg none_criterion "$DEFAULT_WHEN" --slurpfile rules "$RULES" '
+    --arg none_criterion "$DEFAULT_WHEN" --argjson effort_asked "$EFFORT_ASKED" --slurpfile rules "$RULES" '
     ($rules[0]) as $cfg |
     ($cfg.rules | to_entries | map({key: ("rule_" + ((.key + 1) | tostring)), value: .value.when}) | from_entries) as $criteria |
     {
       model: $model,
       state: {task: {project: $project, brief: $brief}},
-      questions: {
+      questions: ({
         rule: {
           type: "choice",
           instructions: "Which ONE dispatch rule best fits `task` (read `task.brief` and `task.project`)? Each option is the rule'"'"'s own matching condition; pick `default` when no rule'"'"'s condition is met, including when a rule'"'"'s own exemption text excludes this task.",
           criteria: ($criteria + {default: $none_criterion})
         }
-      }
+      } + (if $effort_asked then {
+        effort: {
+          type: "choice",
+          instructions: "How much reasoning effort does the requested work in `task` need from the worker that will do it? Judge only the task the brief actually asks for (its intent and build instructions), not the generic scaffold every brief carries (setup, status protocol, validation pipeline, inbox rules), and not the task'"'"'s size or importance; pick the lowest level whose condition holds.",
+          criteria: {
+            low: "Well-understood work with an explicit bounded path: the steps, files, or root cause are already stated and the worker mostly executes them.",
+            medium: "Routine implementation, bounded fixes, ordinary tests, or ordinary reviews where the approach is conventional and some local judgment is needed.",
+            high: "Work whose approach must be worked out: unclear root cause, several interacting components, design tradeoffs, or security-sensitive review with a moderate blast radius.",
+            xhigh: "Ambiguous investigation, architecture, or open-ended design where the problem itself must be framed before any solution and mistakes are costly to unwind."
+          }
+        }
+      } else {} end))
     }')
   T0=$(fm_timing_now_ms)
   HTTP=$(printf '%s' "$REQUEST" | curl -sS --max-time "$TS_TIMEOUT" -o "$RESP_FILE" -w '%{http_code}' \
@@ -270,9 +304,34 @@ fm_quota_json_valid < "$QUOTA" || emit_error "quota-axi --json returned an inval
 
 # ---- resolution: declared gates + quota evidence + argmax, all in jq ------------
 RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --argjson lat "$LAT_MS" --arg none_criterion "$DEFAULT_WHEN" --argjson pmap "$PMAP" \
-  --slurpfile resp "$RESP_FILE" --slurpfile rules "$RULES" --slurpfile quota "$QUOTA" "$FM_QUOTA_ROW_JQ"'
+  --argjson effort_asked "$EFFORT_ASKED" \
+  --slurpfile resp "$RESP_FILE" --slurpfile rules "$RULES" --slurpfile quota "$QUOTA" "$FM_QUOTA_ROW_JQ$EFFORT_OK_JQ"'
   ($resp[0]) as $r | ($rules[0]) as $cfg | ($quota[0]) as $q | ($r.answers.rule) as $a |
   def profiles($v): if ($v | type) == "array" then $v elif ($v | type) == "object" then [$v] else [] end;
+  # The effort answer is validated on its own, in the rule answer shape but
+  # over the fixed low..xhigh ladder; it is only ever consulted for a chosen
+  # candidate that declared effort "auto".
+  (["low", "medium", "high", "xhigh"]) as $ladder |
+  ($r.answers.effort) as $ea |
+  (if ($ea | type) != "object" then "no effort Choice answer"
+   elif ($ea.choice | type) != "string" or ($ladder | index($ea.choice)) == null then "effort choice is not one of low, medium, high, xhigh"
+   elif ($ea.confidence | type) != "number" or $ea.confidence < 0 or $ea.confidence > 1 then "effort confidence is not a number from 0 through 1"
+   elif ($ea.probabilities | type) != "object" or (($ea.probabilities | keys | sort) != ($ladder | sort))
+     or (all($ea.probabilities[]; type == "number" and . >= 0 and . <= 1) | not)
+     or (($ea.probabilities | [.[]] | add) as $t | $t < 0.99 or $t > 1.01) then "effort probabilities must name exactly low, medium, high, xhigh with numeric values summing to about 1"
+   else null end) as $effort_invalid |
+  # A harness fm-spawn.sh launches with no effort flag (gemini, opencode,
+  # kimi, cursor) gets no level at all: effort_ok keeps accepting a pinned
+  # value on gemini for old configurations, but acceptance is not a launch flag.
+  def launch_supported($h; $m; $e):
+    if $h == "gemini" or $h == "opencode" or $h == "kimi" or $h == "cursor" then false
+    else effort_ok($h; $m; $e) end;
+  def effort_resolved($c):
+    if $c.effort != "auto" then {effort: $c.effort}
+    else ($ladder | index($ea.choice)) as $i
+      | ([$ladder[0:($i + 1)] | reverse[] | select(. as $e | launch_supported($c.harness; $c.model; $e))] | first) as $mapped
+      | {effort: $mapped, note: ("effort auto -> " + (if $mapped == null then "omitted (\($c.harness) has no supported level)" else $mapped end))}
+    end;
   def prov($p; $lane): quota_row($q; $p; $lane);
   def rows($p; $lane): (prov($p; $lane) | .quotaSemantics.effectiveAvailability // []);
   def bare($m): ($m | split("/") | last);
@@ -365,7 +424,7 @@ RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --argjson lat "$LAT_MS" --arg non
     rule: $choice,
     rule_when: (if $rule == null then $none_criterion else $rule.when end | .[0:60]),
     confidence: $a.confidence, probabilities: $a.probabilities
-  } as $ev |
+  } + (if $effort_asked then {effort: {choice: ($ea.choice? // null), confidence: ($ea.confidence? // null), probabilities: ($ea.probabilities? // null), invalid: $effort_invalid}} else {} end) as $ev |
   if $sel.invalid then $ev + {status: "error", reason: $sel.invalid}
   elif $a.confidence < ($floor | tonumber) then
     $ev + {status: "ambiguous", reason: "confidence \($a.confidence) below floor \($floor)", candidates: ($answer_use | map(evaluate(.)))}
@@ -381,7 +440,15 @@ RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --argjson lat "$LAT_MS" --arg non
       ($elig | max_by(.spendPriority)) as $best |
       ([$elig[] | select(.spendPriority == $best.spendPriority)] | length) as $ties |
       if $ties > 1 then $ev + {status: "escalate", reason: "genuine spendPriority tie", note: $sel.note, candidates: $cands}
-      else $ev + {status: "clear", note: $sel.note, candidates: $cands, chosen: $best}
+      elif $best.profile.effort == "auto" and ($effort_asked | not) then
+        $ev + {status: "error", reason: "chosen candidate declares effort auto but no effort question was asked", note: $sel.note, candidates: $cands}
+      elif $best.profile.effort == "auto" and $effort_invalid != null then
+        $ev + {status: "error", reason: "response is not an effort Choice answer: \($effort_invalid)", note: $sel.note, candidates: $cands}
+      elif $best.profile.effort == "auto" and $ea.confidence < ($floor | tonumber) then
+        $ev + {status: "ambiguous", reason: "effort confidence \($ea.confidence) below floor \($floor)", note: $sel.note, candidates: $cands}
+      else (effort_resolved($best.profile)) as $eff
+        | $ev + {status: "clear", note: $sel.note, candidates: $cands, chosen: ($best + {effort: $eff.effort})}
+        + (if $eff.note then {effort_note: $eff.note} else {} end)
         + (if ($unranked | length) > 0 then
              {unranked_note: "\($unranked | length) eligible candidate(s) unranked (\([$unranked[].provider] | unique | join(", ")))"}
            else {} end)
@@ -399,7 +466,11 @@ TEXT=$(jq -r '
   "  rule: \(.rule | flat) (\(.rule_when | flat))   confidence: \(.confidence | flat)",
   "  probabilities: \([.probabilities | to_entries[] | "\(.key | flat)=\(.value | flat)"] | join(" "))",
   (if .reason then "  reason: \(.reason | flat)" else empty end),
+  (if .effort then "  effort: \(show(.effort.choice))   confidence: \(show(.effort.confidence))   "
+      + (if .effort.invalid then "invalid: \(.effort.invalid | flat)"
+         else "probabilities: \([.effort.probabilities | to_entries[] | "\(.key | flat)=\(.value | flat)"] | join(" "))" end) else empty end),
   (if .note then "  note: \(.note | flat)" else empty end),
+  (if .effort_note then "  note: \(.effort_note | flat)" else empty end),
   (if .unranked_note then "  note: \(.unranked_note | flat)" else empty end),
   (.candidates[]? | "  candidate: \(.profile.harness | flat):\(show(.profile.model))"
       + (if .provider then "  provider=\(.provider | flat)" else "" end)
@@ -408,6 +479,6 @@ TEXT=$(jq -r '
       + "  -> " + (if .unranked then "eligible, unranked: \(.reason | flat): disclosed uncertainty" elif .eligible then "eligible" else "not eligible: \(.reason | flat)" end)),
   (if .chosen then "  profile: --harness \(.chosen.profile.harness | shell_arg)"
       + (if .chosen.profile.model then " --model \(.chosen.profile.model | shell_arg)" else "" end)
-      + (if .chosen.profile.effort then " --effort \(.chosen.profile.effort | shell_arg)" else "" end) else empty end)' <<<"$RESULT") || emit_error "output rendering failed"
+      + (if .chosen.effort then " --effort \(.chosen.effort | shell_arg)" else "" end) else empty end)' <<<"$RESULT") || emit_error "output rendering failed"
 printf '%s\n' "$TEXT"
 exit 0

@@ -630,6 +630,168 @@ assert_contains "$out" '  reason: quota-axi --json returned an invalid snapshot'
 cp "$BASE_RULES" "$RULES"
 pass "schema 6: each candidate binds to its account row; schema 5 is unchanged"
 
+# --- auto effort: a second Choice question in the same request ------------------
+# effort "auto" on a profile defers the level to Jev; a pinned effort is passed
+# through untouched, and the answer is validated and floored on its own.
+write_effort_response() {  # <path> <rule choice> <rule confidence> <effort choice> <effort confidence>
+  cat > "$1" <<JSON
+{ "model": "jev-1.13.0",
+  "answers": {
+    "rule": { "type": "choice", "choice": "$2", "confidence": $3,
+      "probabilities": { "rule_1": 0.97, "default": 0.03 } },
+    "effort": { "type": "choice", "choice": "$4", "confidence": $5,
+      "probabilities": { "low": 0.05, "medium": 0.05, "high": 0.1, "xhigh": 0.8 } } },
+  "usage": { "input_tokens": 900, "output_tokens": 70 } }
+JSON
+}
+write_rule_only_response() {  # <path> <rule choice> <rule confidence>: one-rule file, no effort answer
+  cat > "$1" <<JSON
+{ "model": "jev-1.13.0",
+  "answers": { "rule": { "type": "choice", "choice": "$2", "confidence": $3,
+    "probabilities": { "rule_1": 0.97, "default": 0.03 } } },
+  "usage": { "input_tokens": 900, "output_tokens": 60 } }
+JSON
+}
+AUTO_QUOTA="$TMP_ROOT/auto-quota.json"
+jq '.providers += [{ "provider": "grok", "state": { "status": "fresh" }, "quotaSemantics": { "status": "known", "effectiveAvailability": [
+  { "scope": "all_models", "status": "known", "effectivePercentRemaining": 88, "runway": { "status": "through_reset" }, "selection": { "spendPriority": 0.95 } } ] } },
+  { "provider": "meta", "state": { "status": "fresh" }, "quotaSemantics": { "status": "known", "effectiveAvailability": [
+  { "scope": "all_models", "status": "known", "effectivePercentRemaining": 70, "runway": { "status": "through_reset" }, "selection": { "spendPriority": 0.5 } } ] } }]' "$QUOTA" > "$AUTO_QUOTA"
+AUTO_RULES="$TMP_ROOT/auto-rules.json"
+printf '%s\n' '{"rules":[{"when":"A bug fix.","use":[{"harness":"codex","model":"gpt-5.6-sol","effort":"auto"},{"harness":"claude","model":"sonnet","effort":"high"}]}]}' > "$AUTO_RULES"
+cp "$AUTO_RULES" "$RULES"
+reset_log
+write_effort_response "$RESPONSE" rule_1 0.9 xhigh 0.8
+TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$AUTO_QUOTA" run code out err "$BRIEF" --project pager
+expect_code 0 "$code" "auto effort exits 0"
+assert_contains "$out" '  status: clear' "auto effort resolves"
+assert_contains "$out" '  effort: xhigh   confidence: 0.8   probabilities: low=0.05 medium=0.05 high=0.1 xhigh=0.8' "the effort answer and its confidence are evidence"
+assert_contains "$out" '  note: effort auto -> xhigh' "the mapped level is explained"
+assert_contains "$out" "  profile: --harness 'codex' --model 'gpt-5.6-sol' --effort 'xhigh'" "an auto profile emits the classified concrete level"
+assert_not_contains "$out" "'auto'" "auto never reaches the profile line"
+body=$(cat "$LOG/body")
+assert_equals '["effort","rule"]' "$(jq -c '.questions | keys' <<<"$body")" "an auto profile adds the effort Choice to the same request"
+assert_equals '["high","low","medium","xhigh"]' "$(jq -c '.questions.effort.criteria | keys' <<<"$body")" "the effort options are exactly low, medium, high, xhigh"
+assert_equals 'choice' "$(jq -r '.questions.effort.type' <<<"$body")" "the effort question is a typed Choice"
+assert_not_contains "$(jq -c '.questions.effort' <<<"$body")" 'max' "max is never offered"
+assert_not_contains "$(jq -c '.questions.effort' <<<"$body")" 'ultra' "ultra is never offered"
+assert_contains "$(jq -r '.questions.effort.instructions' <<<"$body")" 'not the generic scaffold' "the effort question judges the task, not the brief scaffold"
+assert_not_contains "$body" 'spendPriority' "quota still never leaves the machine"
+pass "auto effort: one extra typed Choice, validated and mapped in code"
+
+# --- auto effort maps to each harness's supported level, never an unsupported one -
+for mapping in \
+  'grok||xhigh|high' \
+  'agy||xhigh|high' \
+  'rovo|google|xhigh|high' \
+  'codex|gpt-5.6-sol|xhigh|xhigh' \
+  'claude|sonnet|low|low' \
+  'muse||medium|medium' \
+  'pi|openai-codex/gpt-5.6-sol|high|high' ; do
+  IFS='|' read -r harness model_or_provider answer expected <<<"$mapping"
+  case "$harness" in
+    rovo) profile="{\"harness\":\"rovo\",\"provider\":\"$model_or_provider\",\"effort\":\"auto\"}" ;;
+    pi) profile="{\"harness\":\"pi\",\"model\":\"$model_or_provider\",\"provider\":\"codex\",\"effort\":\"auto\"}" ;;
+    *) profile="{\"harness\":\"$harness\"$( [ -n "$model_or_provider" ] && printf ',"model":"%s"' "$model_or_provider" ),\"effort\":\"auto\"}" ;;
+  esac
+  printf '{"rules":[{"when":"A bug fix.","use":%s}]}\n' "$profile" > "$RULES"
+  reset_log
+  write_effort_response "$RESPONSE" rule_1 0.9 "$answer" 0.8
+  TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$AUTO_QUOTA" run code out err "$BRIEF"
+  expect_code 0 "$code" "$harness auto mapping exits 0"
+  assert_contains "$out" '  status: clear' "$harness auto mapping resolves"
+  assert_contains "$out" "  note: effort auto -> $expected" "$harness: $answer maps to $expected"
+  assert_contains "$out" " --effort '$expected'" "$harness receives its supported level $expected"
+done
+for no_flag in \
+  'cursor|{"harness":"cursor","model":"cursor-grok-4.6-medium","effort":"auto"}|cursor:cursor-grok-4.6-medium' \
+  'gemini|{"harness":"gemini","model":"gemini-3.8-flash-high","provider":"google","effort":"auto"}|gemini:gemini-3.8-flash-high' \
+  'kimi|{"harness":"kimi","model":"kimi-code/k3","provider":"agy","effort":"auto"}|kimi:kimi-code/k3' \
+  'opencode|{"harness":"opencode","model":"anthropic/claude-sonnet-4-5","provider":"claude","effort":"auto"}|opencode:anthropic/claude-sonnet-4-5' ; do
+  IFS='|' read -r harness profile shown <<<"$no_flag"
+  printf '{"rules":[{"when":"A bug fix.","use":%s}]}\n' "$profile" > "$RULES"
+  reset_log
+  write_effort_response "$RESPONSE" rule_1 0.9 xhigh 0.8
+  TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$AUTO_QUOTA" run code out err "$BRIEF"
+  assert_contains "$out" '  status: clear' "$harness still resolves under auto"
+  assert_contains "$out" "  note: effort auto -> omitted ($harness has no supported level)" "$harness reports the omitted level"
+  assert_contains "$out" "candidate: $shown" "$harness candidate is listed"
+  assert_not_contains "$out" '--effort' "$harness receives no --effort flag"
+done
+pass "auto effort lowers to each harness's highest supported level and omits it on no-effort harnesses"
+
+# --- pinned efforts are untouched by the effort answer ---------------------------
+PINNED_WINS="$TMP_ROOT/pinned-wins.json"
+jq '(.providers[] | select(.provider == "codex") | .quotaSemantics.effectiveAvailability[] | select(.scope == "all_models") | .selection.spendPriority) = -0.9' "$AUTO_QUOTA" > "$PINNED_WINS"
+cp "$AUTO_RULES" "$RULES"
+reset_log
+write_effort_response "$RESPONSE" rule_1 0.9 low 0.9
+TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$PINNED_WINS" run code out err "$BRIEF"
+assert_contains "$out" "  profile: --harness 'claude' --model 'sonnet' --effort 'high'" "a pinned effort ignores the classified level"
+assert_not_contains "$out" 'effort auto ->' "no mapping note for a pinned candidate"
+reset_log
+write_rule_only_response "$RESPONSE" rule_1 0.9
+TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$PINNED_WINS" run code out err "$BRIEF"
+assert_contains "$out" '  status: clear' "a missing effort answer never blocks a pinned candidate"
+assert_contains "$out" '  effort: -   confidence: -   invalid: no effort Choice answer' "the malformed effort answer is still disclosed"
+assert_contains "$out" "  profile: --harness 'claude' --model 'sonnet' --effort 'high'" "the pinned profile is unaffected"
+reset_log
+write_effort_response "$RESPONSE" rule_1 0.9 xhigh 0.2
+TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$PINNED_WINS" run code out err "$BRIEF"
+assert_contains "$out" "  profile: --harness 'claude' --model 'sonnet' --effort 'high'" "a low-confidence effort answer never blocks a pinned candidate"
+pass "pinned efforts are preserved and unaffected by the effort answer"
+
+# --- an auto candidate with a bad or unsure effort answer is non-clear -------------
+cp "$AUTO_RULES" "$RULES"
+reset_log
+write_rule_only_response "$RESPONSE" rule_1 0.9
+TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$AUTO_QUOTA" run code out err "$BRIEF"
+expect_code 0 "$code" "missing effort answer exits 0"
+assert_contains "$out" '  status: error' "a missing effort answer for an auto candidate is an error outcome"
+assert_contains "$out" '  reason: response is not an effort Choice answer: no effort Choice answer' "the missing effort answer is named"
+assert_contains "$out" 'candidate: codex:gpt-5.6-sol' "candidate evidence is preserved"
+assert_not_contains "$out" '  profile:' "no profile is emitted without a valid effort"
+for bad_effort in max ultra auto; do
+  reset_log
+  write_effort_response "$RESPONSE" rule_1 0.9 "$bad_effort" 0.9
+  TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$AUTO_QUOTA" run code out err "$BRIEF"
+  assert_contains "$out" '  status: error' "effort $bad_effort is an error outcome"
+  assert_contains "$out" '  reason: response is not an effort Choice answer: effort choice is not one of low, medium, high, xhigh' "effort $bad_effort is refused"
+  assert_not_contains "$out" '  profile:' "effort $bad_effort emits no profile"
+done
+reset_log
+write_effort_response "$RESPONSE" rule_1 0.9 high 0.9
+jq 'del(.answers.effort.probabilities.low)' "$RESPONSE" > "$TMP_ROOT/bad-effort-probabilities.json"
+mv "$TMP_ROOT/bad-effort-probabilities.json" "$RESPONSE"
+TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$AUTO_QUOTA" run code out err "$BRIEF"
+assert_contains "$out" '  reason: response is not an effort Choice answer: effort probabilities must name exactly low, medium, high, xhigh' "effort probabilities are validated"
+reset_log
+write_effort_response "$RESPONSE" rule_1 0.9 high 0.3
+TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$AUTO_QUOTA" run code out err "$BRIEF"
+assert_contains "$out" '  status: ambiguous' "a low-confidence effort answer is ambiguous"
+assert_contains "$out" '  reason: effort confidence 0.3 below floor 0.6' "the effort floor is named independently of the rule floor"
+assert_contains "$out" '  effort: high   confidence: 0.3' "the unsure effort answer is still evidence"
+assert_not_contains "$out" '  profile:' "an unsure effort emits no profile"
+reset_log
+write_effort_response "$RESPONSE" rule_1 0.4 high 0.9
+TYPESAFE_API_KEY=$KEY QUOTA_AXI_FIXTURE="$AUTO_QUOTA" run code out err "$BRIEF"
+assert_contains "$out" '  reason: confidence 0.4 below floor 0.6' "an unsure rule answer is still reported first"
+pass "auto effort: invalid, unsure, or missing effort answers hand the decision back"
+
+# --- configurations without auto never ask or read the effort question ----------
+cp "$BASE_RULES" "$RULES"
+reset_log
+write_effort_response "$RESPONSE" rule_4 0.9 high 0.9
+jq '.answers.rule.probabilities = {"rule_1":0.01,"rule_2":0.01,"rule_3":0.01,"rule_4":0.96,"default":0.01}' "$RESPONSE" > "$TMP_ROOT/extra-effort.json"
+mv "$TMP_ROOT/extra-effort.json" "$RESPONSE"
+TYPESAFE_API_KEY=$KEY run code out err "$BRIEF"
+assert_contains "$out" '  status: clear' "an unrequested effort answer is ignored on a pinned configuration"
+assert_not_contains "$out" '  effort:' "no effort line when the question was not asked"
+assert_contains "$out" "  profile: --harness 'cursor' --model 'cursor-grok-4.6-medium'" "pinned configuration output is unchanged"
+assert_equals '["rule"]' "$(jq -c '.questions | keys' <<<"$(cat "$LOG/body")")" "a configuration without auto asks only the rule Choice"
+cp "$BASE_RULES" "$RULES"
+pass "old configurations and old responses are unchanged"
+
 # --- quota-axi is read exactly once --------------------------------------------
 reset_log
 write_response "$RESPONSE" rule_4 0.9

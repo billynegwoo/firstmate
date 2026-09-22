@@ -1129,6 +1129,7 @@ test_crew_dispatch_validation() {
   done <<'ROWS'
 malformed dispatch config is flagged^{"rules":[^exact^CREW_DISPATCH: invalid config/crew-dispatch.json - malformed JSON
 unverified dispatch harness is flagged^{"rules":[{"when":"anything","use":{"harness":"spaceship"}}],"default":{"harness":"codex"}}^exact^CREW_DISPATCH: invalid config/crew-dispatch.json - unverified harness: spaceship
+auto effort is accepted on every verified harness^{"rules":[{"when":"auto work","use":[{"harness":"codex","effort":"auto"},{"harness":"cursor","model":"cursor-grok-4.5-high","effort":"auto"},{"harness":"grok","effort":"auto"},{"harness":"gemini","model":"gemini-3.8-flash-high","provider":"google","effort":"auto"}]}],"default":{"harness":"claude","effort":"auto"}}^empty^
 codex Luna max effort is accepted^{"rules":[{"when":"big feature","use":{"harness":"codex","model":"gpt-5.6-luna","effort":"max"}}]}^empty^
 codex unsupported model max effort is flagged^{"rules":[{"when":"big feature","use":{"harness":"codex","model":"gpt-5","effort":"max"}}]}^exact^CREW_DISPATCH: invalid config/crew-dispatch.json - invalid effort: codex:max
 unsupported grok max effort is flagged^{"rules":[{"when":"deep current work","use":{"harness":"grok","model":"grok-4","effort":"max"}}]}^exact^CREW_DISPATCH: invalid config/crew-dispatch.json - invalid effort: grok:max
@@ -1199,6 +1200,11 @@ ROWS
     FM_FAKE_TREEHOUSE_LEASE_HELP=1 "$ROOT/bin/fm-bootstrap.sh")
   [ "$out" = 'CREW_DISPATCH: invalid config/crew-dispatch.json - default profile model and effort must be non-empty strings when present' ] \
     || fail "no-key default-profile diagnostic changed from main, got: $out"
+
+  printf '%s\n' '{"rules":[{"when":"auto work","use":{"harness":"cursor","model":"cursor-grok-4.5-high","effort":"auto"}}],"default":{"harness":"codex","effort":"auto"}}' > "$case_dir/home/config/crew-dispatch.json"
+  out=$(PATH="$fakebin:$BASE_PATH" FM_HOME="$case_dir/home" FM_ROOT_OVERRIDE="$case_dir/home" \
+    FM_FAKE_TREEHOUSE_LEASE_HELP=1 "$ROOT/bin/fm-bootstrap.sh")
+  [ -z "$out" ] || fail "auto effort must be accepted without the typed key, got: $out"
 
   printf '%s\n' '{"rules":[{"when":"legacy metadata","approval":"firstmate","floor":{"scope":"all_models","min_percent":200,"provider":"CLAUDE"},"use":{"harness":"claude","provider":"Anthropic","floor":{"scope":"all_models"}}}]}' > "$case_dir/home/config/crew-dispatch.json"
   out=$(PATH="$fakebin:$BASE_PATH" FM_HOME="$case_dir/home" FM_ROOT_OVERRIDE="$case_dir/home" \

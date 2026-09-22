@@ -1135,6 +1135,7 @@ crew_dispatch_validate() {
     def effort_ok($h; $m; $e):
       if $e == null then true
       elif ($e | type) != "string" then false
+      elif $e == "auto" then true
       elif $e == "ultra" then (($h == "pi" or $h == "pi-signed") and (($m | type) == "string") and ($m | startswith("codex-native/")) and ($m | length) > 13)
       elif $h == "claude" then (["low","medium","high","xhigh","max"] | index($e))
       elif $h == "codex" then ((["low","medium","high","xhigh"] | index($e)) != null or ($e == "max" and $m == "gpt-5.6-luna"))

@@ -9,6 +9,7 @@ Add `references/common/dispatch.md` for configured profile precedence.
 The tool reference records verified flags, accepted values, omission behavior, and discovery.
 
 Effort precedence is a per-task captain instruction, then applicable dispatch profile or secondmate pin, then the fallback below.
+A dispatch profile whose effort is `auto` specifies no effort here: typed dispatch resolution supplies the concrete level on a clear result, and otherwise this fallback does, never the literal `auto`.
 Never replace either higher-precedence value.
 Use the fallback only when neither specifies effort.
 
